@@ -4,4 +4,4 @@ export const SUPABASE_ANON_KEY =
 
 // Expo project ID — needed for push tokens
 // You'll get this after running `eas init` or from app.json > extra > eas > projectId
-export const EXPO_PROJECT_ID = '' // TODO: fill after EAS init
+export const EXPO_PROJECT_ID = 'f7566a01-cd1f-405a-8e82-ffedfdf1b692'

@@ -26,7 +26,8 @@
       },
       "permissions": [
         "NOTIFICATIONS"
-      ]
+      ],
+      "googleServicesFile": "./google-services.json"
     },
     "plugins": [
       [

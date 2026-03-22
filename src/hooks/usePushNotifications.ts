@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Platform } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import { supabase } from '../lib/supabase'
@@ -14,58 +14,92 @@ Notifications.setNotificationHandler({
   }),
 })
 
+async function doRegister(profileId: string): Promise<boolean> {
+  console.log('[Push] Starting registration for', profileId)
+
+  const { status: existingStatus } = await Notifications.getPermissionsAsync()
+  let finalStatus = existingStatus
+
+  if (existingStatus !== 'granted') {
+    console.log('[Push] Requesting permission...')
+    const { status } = await Notifications.requestPermissionsAsync()
+    finalStatus = status
+  }
+
+  console.log('[Push] Permission status:', finalStatus)
+  if (finalStatus !== 'granted') return false
+
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+    })
+  }
+
+  if (!EXPO_PROJECT_ID) {
+    console.warn('[Push] EXPO_PROJECT_ID not set')
+    return false
+  }
+
+  console.log('[Push] Getting Expo push token...')
+  const { data: token } = await Notifications.getExpoPushTokenAsync({
+    projectId: EXPO_PROJECT_ID,
+  })
+  console.log('[Push] Token:', token)
+
+  const { error } = await supabase.from('expo_push_tokens').upsert(
+    { profile_id: profileId, token },
+    { onConflict: 'token' }
+  )
+
+  if (error) {
+    console.error('[Push] Supabase upsert error:', error)
+    return false
+  }
+
+  console.log('[Push] Token registered successfully!')
+  return true
+}
+
 export function usePushNotifications(profileId: string | null) {
   const [isRegistered, setIsRegistered] = useState(false)
   const [permission, setPermission] = useState<'undetermined' | 'granted' | 'denied'>('undetermined')
+  const registering = useRef(false)
 
+  // Auto-register on mount if permission already granted
   useEffect(() => {
-    Notifications.getPermissionsAsync().then(({ status }) => {
-      setPermission(status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'undetermined')
-    })
-  }, [])
+    console.log('[Push] useEffect fired, profileId:', profileId, 'isRegistered:', isRegistered)
+    if (!profileId || isRegistered || registering.current) return
+
+    ;(async () => {
+      try {
+        console.log('[Push] Checking permissions...')
+        const { status } = await Notifications.getPermissionsAsync()
+        console.log('[Push] Permission status:', status)
+        const mapped = status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'undetermined'
+        setPermission(mapped)
+
+        if (mapped === 'granted') {
+          registering.current = true
+          const success = await doRegister(profileId)
+          if (success) setIsRegistered(true)
+          registering.current = false
+        }
+      } catch (err) {
+        console.error('[Push] Error in auto-register:', err)
+      }
+    })()
+  }, [profileId, isRegistered])
 
   const registerForPush = useCallback(async () => {
-    if (!profileId) return
+    if (!profileId || registering.current) return
+    registering.current = true
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync()
-    let finalStatus = existingStatus
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync()
-      finalStatus = status
-    }
-
-    setPermission(finalStatus === 'granted' ? 'granted' : 'denied')
-
-    if (finalStatus !== 'granted') return
-
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Default',
-        importance: Notifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-      })
-    }
-
-    const projectId = EXPO_PROJECT_ID
-    if (!projectId) {
-      console.warn('EXPO_PROJECT_ID not set — push tokens will not work')
-      return
-    }
-
-    const { data: tokenData } = await Notifications.getExpoPushTokenAsync({ projectId })
-    const token = tokenData
-
-    await supabase.from('expo_push_tokens').upsert(
-      {
-        profile_id: profileId,
-        token,
-        platform: Platform.OS,
-      },
-      { onConflict: 'token' }
-    )
-
-    setIsRegistered(true)
+    const success = await doRegister(profileId)
+    setPermission(success ? 'granted' : 'denied')
+    if (success) setIsRegistered(true)
+    registering.current = false
   }, [profileId])
 
   return { permission, isRegistered, registerForPush }

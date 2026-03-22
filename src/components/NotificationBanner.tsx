@@ -10,7 +10,6 @@ interface NotificationBannerProps {
 
 export default function NotificationBanner({ permission, isRegistered, onEnable }: NotificationBannerProps) {
   if (isRegistered || permission === 'denied') return null
-  if (permission === 'granted') return null
 
   return (
     <View style={styles.banner}>
