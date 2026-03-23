@@ -75,16 +75,29 @@ export function usePushNotifications(profileId: string | null) {
     ;(async () => {
       try {
         console.log('[Push] Checking permissions...')
-        const { status } = await Notifications.getPermissionsAsync()
-        console.log('[Push] Permission status:', status)
-        const mapped = status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'undetermined'
-        setPermission(mapped)
+        const { status: existingStatus } = await Notifications.getPermissionsAsync()
+        console.log('[Push] Permission status:', existingStatus)
 
-        if (mapped === 'granted') {
+        if (existingStatus === 'granted') {
+          // Already granted — register token
           registering.current = true
           const success = await doRegister(profileId)
           if (success) setIsRegistered(true)
+          setPermission('granted')
           registering.current = false
+        } else {
+          // Not granted — always ask (works for undetermined AND denied on Android)
+          console.log('[Push] Requesting permission...')
+          const { status } = await Notifications.requestPermissionsAsync()
+          console.log('[Push] Request result:', status)
+          const mapped = status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'undetermined'
+          setPermission(mapped)
+          if (mapped === 'granted') {
+            registering.current = true
+            const success = await doRegister(profileId)
+            if (success) setIsRegistered(true)
+            registering.current = false
+          }
         }
       } catch (err) {
         console.error('[Push] Error in auto-register:', err)

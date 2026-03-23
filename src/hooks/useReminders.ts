@@ -56,7 +56,9 @@ export function useReminders(profileId: string | null, partnerId: string | null)
     async (data: { title: string; note?: string; due_at?: string; created_by: string; assigned_to: string }) => {
       const { data: inserted, error } = await supabase.from('reminders').insert(data).select().single()
       if (!error && inserted) {
-        setReminders((prev) => [inserted, ...prev])
+        setReminders((prev) =>
+          prev.some((r) => r.id === inserted.id) ? prev : [inserted, ...prev]
+        )
       }
       return !error
     },
