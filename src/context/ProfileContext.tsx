@@ -110,6 +110,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     if (fullProfile) {
       setProfile(fullProfile)
+      setCoupleCode(code.trim().toUpperCase())
       if (data.partnerId) {
         setPartner({ id: data.partnerId, name: data.partnerName, couple_id: fullProfile.couple_id })
       }
