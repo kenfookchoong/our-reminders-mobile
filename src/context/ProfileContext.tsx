@@ -12,6 +12,7 @@ interface ProfileContextValue {
   setupCouple: (name: string) => Promise<string>
   joinCouple: (name: string, code: string) => Promise<boolean>
   rejoinCouple: (name: string, code: string) => Promise<boolean>
+  cancelCouple: () => void
   clearProfile: () => void
 }
 
@@ -23,6 +24,7 @@ const ProfileContext = createContext<ProfileContextValue>({
   setupCouple: async () => '',
   joinCouple: async () => false,
   rejoinCouple: async () => false,
+  cancelCouple: () => {},
   clearProfile: () => {},
 })
 
@@ -155,6 +157,21 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     return true
   }, [])
 
+  const cancelCouple = useCallback(() => {
+    // Cancel couple creation — deletes couple + profile if no partner joined
+    if (profile?.id) {
+      fetch(`${SUPABASE_URL}/functions/v1/join-couple`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel', profileId: profile.id }),
+      }).catch(() => {})
+    }
+    AsyncStorage.removeItem(STORAGE_KEY)
+    setProfile(null)
+    setPartner(null)
+    setCoupleCode(null)
+  }, [profile])
+
   const clearProfile = useCallback(() => {
     // Tell backend this user left
     if (profile?.id) {
@@ -192,7 +209,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [profile, partner])
 
   return (
-    <ProfileContext.Provider value={{ profile, partner, coupleCode, loading, setupCouple, joinCouple, rejoinCouple, clearProfile }}>
+    <ProfileContext.Provider value={{ profile, partner, coupleCode, loading, setupCouple, joinCouple, rejoinCouple, cancelCouple, clearProfile }}>
       {children}
     </ProfileContext.Provider>
   )
