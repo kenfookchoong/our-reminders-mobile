@@ -43,7 +43,9 @@ export default function Layout({ profileName, partnerName, coupleCode, onLeave, 
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Our Reminders</Text>
-          <Text style={styles.subtitle}>{profileName} & {partnerName}</Text>
+          <Text style={styles.subtitle}>
+            <Text style={styles.myName}>{profileName}</Text> & {partnerName}
+          </Text>
         </View>
         <Pressable onPress={() => setShowMenu(true)} hitSlop={8} style={styles.gearButton}>
           <Ionicons name="settings-outline" size={22} color={colors.stone[400]} />
@@ -97,6 +99,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.stone[400],
     marginTop: 1,
+  },
+  myName: {
+    color: colors.warm[500],
+    fontWeight: '600',
   },
   gearButton: {
     width: 36,
