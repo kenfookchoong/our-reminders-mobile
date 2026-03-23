@@ -145,11 +145,19 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const clearProfile = useCallback(() => {
+    // Tell backend this user left
+    if (profile?.id) {
+      fetch(`${SUPABASE_URL}/functions/v1/join-couple`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'leave', profileId: profile.id }),
+      }).catch(() => {})
+    }
     AsyncStorage.removeItem(STORAGE_KEY)
     setProfile(null)
     setPartner(null)
     setCoupleCode(null)
-  }, [])
+  }, [profile])
 
   // Listen for partner joining
   useEffect(() => {
