@@ -1,6 +1,7 @@
 export interface Profile {
-  id: 'person-a' | 'person-b'
+  id: string
   name: string
+  couple_id: string
 }
 
 export interface Reminder {

@@ -1,18 +1,3 @@
-import type { Profile } from '../types'
-
-export const PROFILES: Profile[] = [
-  { id: 'person-a', name: 'Ken' },
-  { id: 'person-b', name: 'Mei' },
-]
-
-export function getPartner(myId: string): Profile {
-  return PROFILES.find((p) => p.id !== myId)!
-}
-
-export function getProfile(id: string): Profile {
-  return PROFILES.find((p) => p.id === id)!
-}
-
 export function isOverdue(dueAt: string | null): boolean {
   if (!dueAt) return false
   return new Date(dueAt) < new Date()

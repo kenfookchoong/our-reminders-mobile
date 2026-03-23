@@ -1,15 +1,17 @@
-import { useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert } from 'react-native'
+import { useState, useRef } from 'react'
+import { View, Text, Pressable, StyleSheet, Alert, Animated } from 'react-native'
+import { Swipeable } from 'react-native-gesture-handler'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import type { Reminder } from '../types'
-import { formatDueDate, isOverdue, getProfile } from '../lib/utils'
+import { formatDueDate, isOverdue } from '../lib/utils'
 import { colors } from '../theme/colors'
 import NudgeButton from './NudgeButton'
 
 interface ReminderCardProps {
   reminder: Reminder
   myId: string
+  myName: string
   partnerId: string
   partnerName: string
   onToggleDone: (id: string, isDone: boolean) => void
@@ -20,6 +22,7 @@ interface ReminderCardProps {
 export default function ReminderCard({
   reminder,
   myId,
+  myName,
   partnerId,
   partnerName,
   onToggleDone,
@@ -27,84 +30,137 @@ export default function ReminderCard({
   onEdit,
 }: ReminderCardProps) {
   const [showActions, setShowActions] = useState(false)
+  const swipeableRef = useRef<Swipeable>(null)
   const overdue = !reminder.is_done && isOverdue(reminder.due_at)
   const isPartnerReminder = reminder.assigned_to === partnerId
 
-  const creatorName = getProfile(reminder.created_by)?.name ?? 'Unknown'
-  const label = reminder.created_by === myId ? `From ${creatorName}` : `From ${creatorName}`
+  const creatorName = reminder.created_by === myId ? myName : partnerName
+  const assigneeName = reminder.assigned_to === myId ? 'Me' : partnerName
+  const label = `From ${creatorName} · For ${assigneeName}`
 
   const handleToggle = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     onToggleDone(reminder.id, reminder.is_done)
+    swipeableRef.current?.close()
   }
 
   const handleDelete = () => {
     Alert.alert('Delete Reminder', `Delete "${reminder.title}"?`, [
-      { text: 'Cancel', style: 'cancel' },
+      { text: 'Cancel', style: 'cancel', onPress: () => swipeableRef.current?.close() },
       { text: 'Delete', style: 'destructive', onPress: () => onDelete(reminder.id) },
     ])
   }
 
-  return (
-    <Pressable
-      onPress={() => setShowActions(!showActions)}
-      style={[styles.card, overdue && styles.cardOverdue, reminder.is_done && styles.cardDone]}
-    >
-      <View style={styles.row}>
-        {/* Checkbox */}
-        <Pressable onPress={handleToggle} hitSlop={8} style={styles.checkbox}>
-          {reminder.is_done ? (
-            <Ionicons name="checkmark-circle" size={26} color={colors.green[500]} />
-          ) : (
-            <View style={styles.emptyCircle} />
-          )}
-        </Pressable>
-
-        {/* Content */}
-        <View style={styles.content}>
-          <Text style={[styles.title, reminder.is_done && styles.titleDone]}>
-            {reminder.title}
-          </Text>
-          {reminder.note ? (
-            <Text style={styles.note} numberOfLines={1}>{reminder.note}</Text>
-          ) : null}
-          <Text style={styles.label}>{label}</Text>
-        </View>
-
-        {/* Right side: due badge + nudge */}
-        <View style={styles.rightSide}>
-          {reminder.due_at && !reminder.is_done ? (
-            <View style={[styles.dueBadge, overdue && styles.dueBadgeOverdue]}>
-              <Text style={[styles.dueText, overdue && styles.dueTextOverdue]}>
-                {formatDueDate(reminder.due_at)}
-              </Text>
-            </View>
-          ) : null}
-          {isPartnerReminder && !reminder.is_done ? (
-            <NudgeButton
-              reminderId={reminder.id}
-              nudgedBy={myId}
-              nudgedTo={partnerId}
-              partnerName={partnerName}
-            />
-          ) : null}
-        </View>
+  const renderLeftActions = (_progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+    const scale = dragX.interpolate({
+      inputRange: [0, 80],
+      outputRange: [0.5, 1],
+      extrapolate: 'clamp',
+    })
+    return (
+      <View style={styles.leftAction}>
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Ionicons name={reminder.is_done ? 'arrow-undo' : 'checkmark-circle'} size={28} color="white" />
+        </Animated.View>
+        <Text style={styles.actionLabel}>{reminder.is_done ? 'Undo' : 'Done'}</Text>
       </View>
+    )
+  }
 
-      {/* Actions */}
-      {showActions && !reminder.is_done ? (
-        <View style={styles.actions}>
-          <Pressable onPress={() => onEdit(reminder)} style={styles.actionButton}>
-            <Ionicons name="pencil" size={16} color={colors.stone[500]} />
-            <Text style={styles.actionText}>Edit</Text>
+  const renderRightActions = (_progress: Animated.AnimatedInterpolation<number>, dragX: Animated.AnimatedInterpolation<number>) => {
+    const scale = dragX.interpolate({
+      inputRange: [-80, 0],
+      outputRange: [1, 0.5],
+      extrapolate: 'clamp',
+    })
+    return (
+      <View style={styles.rightAction}>
+        <Text style={styles.actionLabel}>Delete</Text>
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Ionicons name="trash" size={24} color="white" />
+        </Animated.View>
+      </View>
+    )
+  }
+
+  return (
+    <Swipeable
+      ref={swipeableRef}
+      renderLeftActions={renderLeftActions}
+      renderRightActions={renderRightActions}
+      onSwipeableOpen={(direction) => {
+        if (direction === 'left') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+          handleToggle()
+        } else {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
+          handleDelete()
+        }
+      }}
+      overshootLeft={false}
+      overshootRight={false}
+      friction={2}
+    >
+      <Pressable
+        onPress={() => setShowActions(!showActions)}
+        style={[styles.card, overdue && styles.cardOverdue, reminder.is_done && styles.cardDone]}
+      >
+        <View style={styles.row}>
+          {/* Checkbox */}
+          <Pressable onPress={handleToggle} hitSlop={8} style={styles.checkbox}>
+            {reminder.is_done ? (
+              <Ionicons name="checkmark-circle" size={26} color={colors.green[500]} />
+            ) : (
+              <View style={styles.emptyCircle} />
+            )}
           </Pressable>
-          <Pressable onPress={handleDelete} style={styles.actionButton}>
-            <Ionicons name="trash" size={16} color={colors.red[400]} />
-            <Text style={[styles.actionText, { color: colors.red[400] }]}>Delete</Text>
-          </Pressable>
+
+          {/* Content */}
+          <View style={styles.content}>
+            <Text style={[styles.title, reminder.is_done && styles.titleDone]}>
+              {reminder.title}
+            </Text>
+            {reminder.note ? (
+              <Text style={styles.note} numberOfLines={1}>{reminder.note}</Text>
+            ) : null}
+            <Text style={styles.label}>{label}</Text>
+          </View>
+
+          {/* Right side: due badge + nudge */}
+          <View style={styles.rightSide}>
+            {reminder.due_at && !reminder.is_done ? (
+              <View style={[styles.dueBadge, overdue && styles.dueBadgeOverdue]}>
+                <Text style={[styles.dueText, overdue && styles.dueTextOverdue]}>
+                  {formatDueDate(reminder.due_at)}
+                </Text>
+              </View>
+            ) : null}
+            {isPartnerReminder && !reminder.is_done ? (
+              <NudgeButton
+                reminderId={reminder.id}
+                nudgedBy={myId}
+                nudgedTo={partnerId}
+                partnerName={partnerName}
+              />
+            ) : null}
+          </View>
         </View>
-      ) : null}
-    </Pressable>
+
+        {/* Actions */}
+        {showActions && !reminder.is_done ? (
+          <View style={styles.actions}>
+            <Pressable onPress={() => onEdit(reminder)} style={styles.actionButton}>
+              <Ionicons name="pencil" size={16} color={colors.stone[500]} />
+              <Text style={styles.actionText}>Edit</Text>
+            </Pressable>
+            <Pressable onPress={handleDelete} style={styles.actionButton}>
+              <Ionicons name="trash" size={16} color={colors.red[400]} />
+              <Text style={[styles.actionText, { color: colors.red[400] }]}>Delete</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </Pressable>
+    </Swipeable>
   )
 }
 
@@ -200,5 +256,30 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 13,
     color: colors.stone[500],
+  },
+  leftAction: {
+    backgroundColor: '#22C55E',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  rightAction: {
+    backgroundColor: '#EF4444',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  actionLabel: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 14,
   },
 })

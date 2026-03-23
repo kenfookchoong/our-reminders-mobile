@@ -14,9 +14,9 @@ import { colors } from '../theme/colors'
 import type { Reminder } from '../types'
 
 export default function HomeScreen() {
-  const { profile, partner, clearProfile } = useProfile()
+  const { profile, partner, coupleCode, clearProfile } = useProfile()
   const { reminders, loading, addReminder, updateReminder, toggleDone, deleteReminder, refreshReminders } =
-    useReminders()
+    useReminders(profile?.id ?? null, partner?.id ?? null)
   const { permission, isRegistered, registerForPush } = usePushNotifications(profile?.id ?? null)
   const router = useRouter()
   const insets = useSafeAreaInsets()
@@ -25,7 +25,7 @@ export default function HomeScreen() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
 
-  const handleSwitch = useCallback(() => {
+  const handleLeave = useCallback(() => {
     clearProfile()
     router.replace('/')
   }, [clearProfile, router])
@@ -49,7 +49,7 @@ export default function HomeScreen() {
   })
 
   return (
-    <Layout profileName={profile.name} partnerName={partner.name} onSwitch={handleSwitch}>
+    <Layout profileName={profile.name} partnerName={partner.name} coupleCode={coupleCode} onLeave={handleLeave}>
       <NotificationBanner
         permission={permission}
         isRegistered={isRegistered}
@@ -66,6 +66,7 @@ export default function HomeScreen() {
         <ReminderList
           reminders={filtered}
           myId={profile.id}
+          myName={profile.name}
           partnerId={partner.id}
           partnerName={partner.name}
           onToggleDone={toggleDone}

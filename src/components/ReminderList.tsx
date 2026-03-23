@@ -8,6 +8,7 @@ import ReminderCard from './ReminderCard'
 interface ReminderListProps {
   reminders: Reminder[]
   myId: string
+  myName: string
   partnerId: string
   partnerName: string
   onToggleDone: (id: string, isDone: boolean) => void
@@ -19,6 +20,7 @@ interface ReminderListProps {
 export default function ReminderList({
   reminders,
   myId,
+  myName,
   partnerId,
   partnerName,
   onToggleDone,
@@ -81,6 +83,7 @@ export default function ReminderList({
         <ReminderCard
           reminder={item}
           myId={myId}
+          myName={myName}
           partnerId={partnerId}
           partnerName={partnerName}
           onToggleDone={onToggleDone}

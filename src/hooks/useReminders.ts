@@ -2,20 +2,27 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Reminder } from '../types'
 
-export function useReminders() {
+export function useReminders(profileId: string | null, partnerId: string | null) {
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!profileId) return
+
+    const ids = [profileId, partnerId].filter(Boolean) as string[]
+
+    // Initial fetch — scoped to this couple's profiles
     supabase
       .from('reminders')
       .select('*')
+      .in('created_by', ids)
       .order('created_at', { ascending: false })
       .then(({ data }) => {
         if (data) setReminders(data)
         setLoading(false)
       })
 
+    // Realtime subscription
     const channel = supabase
       .channel('reminders-changes')
       .on(
@@ -24,6 +31,8 @@ export function useReminders() {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const newR = payload.new as Reminder
+            // Only add if it belongs to this couple
+            if (!ids.includes(newR.created_by)) return
             setReminders((prev) =>
               prev.some((r) => r.id === newR.id) ? prev : [newR, ...prev]
             )
@@ -41,7 +50,7 @@ export function useReminders() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [])
+  }, [profileId, partnerId])
 
   const addReminder = useCallback(
     async (data: { title: string; note?: string; due_at?: string; created_by: string; assigned_to: string }) => {
@@ -100,12 +109,15 @@ export function useReminders() {
   }, [])
 
   const refreshReminders = useCallback(async () => {
+    if (!profileId) return
+    const ids = [profileId, partnerId].filter(Boolean) as string[]
     const { data } = await supabase
       .from('reminders')
       .select('*')
+      .in('created_by', ids)
       .order('created_at', { ascending: false })
     if (data) setReminders(data)
-  }, [])
+  }, [profileId, partnerId])
 
   return { reminders, loading, addReminder, updateReminder, toggleDone, deleteReminder, refreshReminders }
 }
