@@ -137,8 +137,18 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (fullProfile) {
       setProfile(fullProfile)
       setCoupleCode(code.toUpperCase())
+
+      // Fetch partner regardless of their left_at status
       if (data.partnerId) {
         setPartner({ id: data.partnerId, name: data.partnerName, couple_id: fullProfile.couple_id })
+      } else {
+        const { data: partnerData } = await supabase
+          .from('profiles')
+          .select('id, name, couple_id')
+          .eq('couple_id', fullProfile.couple_id)
+          .neq('id', fullProfile.id)
+          .single()
+        if (partnerData) setPartner(partnerData)
       }
     }
     return true
