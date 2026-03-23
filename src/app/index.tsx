@@ -5,10 +5,10 @@ import { useRouter } from 'expo-router'
 import { useProfile } from '../context/ProfileContext'
 import { colors } from '../theme/colors'
 
-type Step = 'choice' | 'create' | 'join' | 'waiting'
+type Step = 'choice' | 'create' | 'join' | 'rejoin' | 'waiting'
 
 export default function WelcomeScreen() {
-  const { profile, partner, loading, setupCouple, joinCouple } = useProfile()
+  const { profile, partner, loading, setupCouple, joinCouple, rejoinCouple } = useProfile()
   const router = useRouter()
   const [step, setStep] = useState<Step>('choice')
   const [name, setName] = useState('')
@@ -81,6 +81,18 @@ export default function WelcomeScreen() {
     setSubmitting(false)
   }
 
+  const handleRejoin = async () => {
+    if (!name.trim() || !code.trim()) return
+    setSubmitting(true)
+    setError('')
+    try {
+      await rejoinCouple(name.trim(), code.trim())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No profile found with that name and code')
+    }
+    setSubmitting(false)
+  }
+
   const copyCode = async () => {
     await Clipboard.setStringAsync(coupleCode)
     Alert.alert('Copied!', `Code ${coupleCode} copied to clipboard`)
@@ -99,6 +111,9 @@ export default function WelcomeScreen() {
           </Pressable>
           <Pressable onPress={() => setStep('join')} style={[styles.secondaryButton]}>
             <Text style={styles.secondaryButtonText}>I have an invite code</Text>
+          </Pressable>
+          <Pressable onPress={() => setStep('rejoin')} style={styles.backButton}>
+            <Text style={styles.rejoinLink}>Had an account? Rejoin here</Text>
           </Pressable>
         </>
       )}
@@ -147,6 +162,36 @@ export default function WelcomeScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <Pressable onPress={handleJoin} disabled={!name.trim() || code.length < 6 || submitting} style={[styles.primaryButton, (!name.trim() || code.length < 6 || submitting) && styles.disabled]}>
             <Text style={styles.primaryButtonText}>{submitting ? 'Joining...' : 'Join'}</Text>
+          </Pressable>
+          <Pressable onPress={() => setStep('choice')} style={styles.backButton}>
+            <Text style={styles.backText}>Back</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {step === 'rejoin' && (
+        <View style={styles.form}>
+          <Text style={styles.subtitle}>Enter your name and invite code</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="Your name (exact match)"
+            autoFocus
+            style={styles.input}
+            placeholderTextColor={colors.stone[300]}
+          />
+          <TextInput
+            value={code}
+            onChangeText={(t) => setCode(t.toUpperCase().slice(0, 6))}
+            placeholder="Invite code"
+            maxLength={6}
+            autoCapitalize="characters"
+            style={[styles.input, styles.codeInput]}
+            placeholderTextColor={colors.stone[300]}
+          />
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <Pressable onPress={handleRejoin} disabled={!name.trim() || code.length < 6 || submitting} style={[styles.primaryButton, (!name.trim() || code.length < 6 || submitting) && styles.disabled]}>
+            <Text style={styles.primaryButtonText}>{submitting ? 'Rejoining...' : 'Rejoin'}</Text>
           </Pressable>
           <Pressable onPress={() => setStep('choice')} style={styles.backButton}>
             <Text style={styles.backText}>Back</Text>
@@ -247,4 +292,5 @@ const styles = StyleSheet.create({
   waitingRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   pulseDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.warm[400] },
   waitingText: { fontSize: 13, color: colors.stone[400] },
+  rejoinLink: { fontSize: 13, color: colors.stone[400], marginTop: 8 },
 })

@@ -11,6 +11,7 @@ interface ProfileContextValue {
   loading: boolean
   setupCouple: (name: string) => Promise<string>
   joinCouple: (name: string, code: string) => Promise<boolean>
+  rejoinCouple: (name: string, code: string) => Promise<boolean>
   clearProfile: () => void
 }
 
@@ -21,6 +22,7 @@ const ProfileContext = createContext<ProfileContextValue>({
   loading: true,
   setupCouple: async () => '',
   joinCouple: async () => false,
+  rejoinCouple: async () => false,
   clearProfile: () => {},
 })
 
@@ -115,6 +117,33 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     return true
   }, [])
 
+  const rejoinCouple = useCallback(async (name: string, code: string): Promise<boolean> => {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/join-couple`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'rejoin', name, code }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error)
+
+    await AsyncStorage.setItem(STORAGE_KEY, data.profileId)
+
+    const { data: fullProfile } = await supabase
+      .from('profiles')
+      .select('id, name, couple_id')
+      .eq('id', data.profileId)
+      .single()
+
+    if (fullProfile) {
+      setProfile(fullProfile)
+      setCoupleCode(code.toUpperCase())
+      if (data.partnerId) {
+        setPartner({ id: data.partnerId, name: data.partnerName, couple_id: fullProfile.couple_id })
+      }
+    }
+    return true
+  }, [])
+
   const clearProfile = useCallback(() => {
     AsyncStorage.removeItem(STORAGE_KEY)
     setProfile(null)
@@ -144,7 +173,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   }, [profile, partner])
 
   return (
-    <ProfileContext.Provider value={{ profile, partner, coupleCode, loading, setupCouple, joinCouple, clearProfile }}>
+    <ProfileContext.Provider value={{ profile, partner, coupleCode, loading, setupCouple, joinCouple, rejoinCouple, clearProfile }}>
       {children}
     </ProfileContext.Provider>
   )
