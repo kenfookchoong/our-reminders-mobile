@@ -58,12 +58,12 @@ export default function ReminderCard({
       extrapolate: 'clamp',
     })
     return (
-      <View style={styles.leftAction}>
+      <Pressable onPress={handleToggle} style={styles.leftAction}>
         <Animated.View style={{ transform: [{ scale }] }}>
           <Ionicons name={reminder.is_done ? 'arrow-undo' : 'checkmark-circle'} size={28} color="white" />
         </Animated.View>
         <Text style={styles.actionLabel}>{reminder.is_done ? 'Undo' : 'Done'}</Text>
-      </View>
+      </Pressable>
     )
   }
 
@@ -74,12 +74,12 @@ export default function ReminderCard({
       extrapolate: 'clamp',
     })
     return (
-      <View style={styles.rightAction}>
+      <Pressable onPress={handleDelete} style={styles.rightAction}>
         <Text style={styles.actionLabel}>Delete</Text>
         <Animated.View style={{ transform: [{ scale }] }}>
           <Ionicons name="trash" size={24} color="white" />
         </Animated.View>
-      </View>
+      </Pressable>
     )
   }
 
@@ -88,14 +88,8 @@ export default function ReminderCard({
       ref={swipeableRef}
       renderLeftActions={renderLeftActions}
       renderRightActions={renderRightActions}
-      onSwipeableOpen={(direction) => {
-        if (direction === 'left') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-          handleToggle()
-        } else {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)
-          handleDelete()
-        }
+      onSwipeableWillOpen={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
       }}
       overshootLeft={false}
       overshootRight={false}
