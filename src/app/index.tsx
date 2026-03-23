@@ -8,7 +8,7 @@ import { colors } from '../theme/colors'
 type Step = 'choice' | 'create' | 'join' | 'rejoin' | 'waiting'
 
 export default function WelcomeScreen() {
-  const { profile, partner, loading, setupCouple, joinCouple, rejoinCouple } = useProfile()
+  const { profile, partner, loading, setupCouple, joinCouple, rejoinCouple, clearProfile } = useProfile()
   const router = useRouter()
   const [step, setStep] = useState<Step>('choice')
   const [name, setName] = useState('')
@@ -51,6 +51,9 @@ export default function WelcomeScreen() {
         <Text style={styles.title}>Our Reminders</Text>
         <Text style={styles.subtitle}>Waiting for your partner to join...</Text>
         <ActivityIndicator size="small" color={colors.warm[500]} style={{ marginTop: 16 }} />
+        <Pressable onPress={() => { clearProfile(); setStep('choice') }} style={styles.backButton}>
+          <Text style={styles.backText}>Cancel</Text>
+        </Pressable>
       </View>
     )
   }
@@ -210,6 +213,9 @@ export default function WelcomeScreen() {
             <View style={styles.pulseDot} />
             <Text style={styles.waitingText}>Waiting for your partner to join...</Text>
           </View>
+          <Pressable onPress={() => { clearProfile(); setStep('choice') }} style={styles.backButton}>
+            <Text style={styles.backText}>Cancel</Text>
+          </Pressable>
         </View>
       )}
     </View>
