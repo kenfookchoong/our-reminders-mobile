@@ -13,3 +13,4 @@ web-build/
 android/
 our-reminders-dev.apk
 our-reminders-firebase-adminsdk-*.json
+google-services.json
