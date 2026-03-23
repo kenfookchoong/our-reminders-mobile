@@ -256,9 +256,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 20,
+    width: 80,
     marginBottom: 8,
   },
   rightAction: {
@@ -266,9 +264,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 20,
+    width: 80,
     marginBottom: 8,
   },
   actionLabel: {
