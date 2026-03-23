@@ -84,7 +84,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
     if (!res.ok) throw new Error(data.error)
 
     await AsyncStorage.setItem(STORAGE_KEY, data.profileId)
-    setProfile({ id: data.profileId, name, couple_id: '' })
+    setProfile({ id: data.profileId, name, couple_id: data.coupleId })
     setCoupleCode(data.coupleCode)
     return data.coupleCode
   }, [])
