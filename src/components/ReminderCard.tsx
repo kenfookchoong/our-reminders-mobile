@@ -131,16 +131,18 @@ export default function ReminderCard({
           {/* Right side: due badge + nudge */}
           <View style={styles.rightSide}>
             {reminder.due_at && !reminder.is_done ? (
-              <View style={[styles.dueBadge, overdue && styles.dueBadgeOverdue]}>
-                <Text style={[styles.dueText, overdue && styles.dueTextOverdue]}>
-                  {formatDueDate(reminder.due_at)}
-                </Text>
-              </View>
-              {reminder.recurrence && (
-                <View style={styles.recurrenceBadge}>
-                  <Text style={styles.recurrenceText}>🔁 Repeats {reminder.recurrence}</Text>
+              <>
+                <View style={[styles.dueBadge, overdue && styles.dueBadgeOverdue]}>
+                  <Text style={[styles.dueText, overdue && styles.dueTextOverdue]}>
+                    {formatDueDate(reminder.due_at)}
+                  </Text>
                 </View>
-              )}
+                {reminder.recurrence && (
+                  <View style={styles.recurrenceBadge}>
+                    <Text style={styles.recurrenceText}>🔁 Repeats {reminder.recurrence}</Text>
+                  </View>
+                )}
+              </>
             ) : null}
             {isPartnerReminder && !reminder.is_done ? (
               <NudgeButton
