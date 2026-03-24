@@ -13,6 +13,7 @@ export interface Reminder {
   assigned_to: string
   is_done: boolean
   completed_at: string | null
+  recurrence: 'daily' | 'weekly' | 'monthly' | null
   created_at: string
   updated_at: string
 }

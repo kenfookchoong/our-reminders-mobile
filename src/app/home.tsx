@@ -124,6 +124,8 @@ export default function HomeScreen() {
       <CreateReminderSheet
         open={sheetOpen}
         onClose={handleCloseSheet}
+        isPremium={isPremium}
+        onShowPaywall={() => { handleCloseSheet(); setPaywallOpen(true) }}
         onCreate={(data) => addReminder({ ...data, created_by: profile.id })}
         onEdit={(id, data, originalDueAt) => updateReminder(id, data, originalDueAt)}
         editingReminder={editingReminder}

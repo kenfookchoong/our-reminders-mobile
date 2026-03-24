@@ -134,6 +134,7 @@ export default function ReminderCard({
               <View style={[styles.dueBadge, overdue && styles.dueBadgeOverdue]}>
                 <Text style={[styles.dueText, overdue && styles.dueTextOverdue]}>
                   {formatDueDate(reminder.due_at)}
+                  {reminder.recurrence ? ` 🔁 ${reminder.recurrence}` : ''}
                 </Text>
               </View>
             ) : null}

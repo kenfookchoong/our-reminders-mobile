@@ -9,10 +9,12 @@ import { colors } from '../theme/colors'
 interface CreateReminderSheetProps {
   open: boolean
   onClose: () => void
-  onCreate: (data: { title: string; note?: string; due_at?: string; assigned_to: string }) => void
+  isPremium?: boolean
+  onShowPaywall?: () => void
+  onCreate: (data: { title: string; note?: string; due_at?: string | null; assigned_to: string; recurrence?: string | null }) => void
   onEdit?: (
     id: string,
-    data: { title: string; note?: string; due_at?: string; assigned_to: string },
+    data: { title: string; note?: string; due_at?: string | null; assigned_to: string; recurrence?: string | null },
     originalDueAt?: string | null
   ) => void
   editingReminder?: Reminder | null
@@ -25,6 +27,8 @@ interface CreateReminderSheetProps {
 export default function CreateReminderSheet({
   open,
   onClose,
+  isPremium,
+  onShowPaywall,
   onCreate,
   onEdit,
   editingReminder,
@@ -42,6 +46,7 @@ export default function CreateReminderSheet({
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)
   const [assignTo, setAssignTo] = useState<'me' | 'them'>('me')
+  const [recurrence, setRecurrence] = useState<string | null>(null)
 
   const isEditing = !!editingReminder
 
@@ -52,11 +57,13 @@ export default function CreateReminderSheet({
         setNote(editingReminder.note || '')
         setDueDate(editingReminder.due_at ? new Date(editingReminder.due_at) : null)
         setAssignTo(editingReminder.assigned_to === myId ? 'me' : 'them')
+        setRecurrence(editingReminder.recurrence || null)
       } else {
         setTitle('')
         setNote('')
         setDueDate(null)
         setAssignTo('me')
+        setRecurrence(null)
       }
       bottomSheetRef.current?.expand()
       setTimeout(() => titleInputRef.current?.focus(), 400)
@@ -74,6 +81,7 @@ export default function CreateReminderSheet({
       note: note.trim() || undefined,
       due_at: dueDate ? dueDate.toISOString() : null,
       assigned_to: assignTo === 'me' ? myId : partnerId,
+      recurrence: recurrence || null,
     }
 
     if (isEditing && onEdit && editingReminder) {
@@ -83,7 +91,7 @@ export default function CreateReminderSheet({
     }
 
     onClose()
-  }, [title, note, dueDate, assignTo, isEditing, editingReminder, myId, partnerId, onCreate, onEdit, onClose])
+  }, [title, note, dueDate, assignTo, recurrence, isEditing, editingReminder, myId, partnerId, onCreate, onEdit, onClose])
 
   const handleDateChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
     if (Platform.OS === 'android') setShowDatePicker(false)
@@ -192,6 +200,40 @@ export default function CreateReminderSheet({
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleTimeChange}
           />
+        )}
+
+        {/* Recurrence (premium-gated) */}
+        {dueDate && (
+          <>
+            <View style={styles.recurrenceLabel}>
+              <Text style={styles.fieldLabel}>Repeat</Text>
+              {!isPremium && <Text style={styles.premiumBadge}>PREMIUM</Text>}
+            </View>
+            <View style={styles.toggleRow}>
+              {(['none', 'daily', 'weekly', 'monthly'] as const).map((opt) => {
+                const isSelected = (opt === 'none' && !recurrence) || recurrence === opt
+                const isLocked = opt !== 'none' && !isPremium
+                return (
+                  <Pressable
+                    key={opt}
+                    onPress={() => {
+                      if (isLocked && onShowPaywall) {
+                        onShowPaywall()
+                      } else {
+                        setRecurrence(opt === 'none' ? null : opt)
+                      }
+                    }}
+                    style={[styles.recurrenceButton, isSelected && styles.toggleActive]}
+                  >
+                    {isLocked && <Ionicons name="lock-closed" size={10} color={colors.stone[400]} style={{ marginRight: 4 }} />}
+                    <Text style={[styles.recurrenceText, isSelected && styles.toggleTextActive]}>
+                      {opt === 'none' ? 'None' : opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    </Text>
+                  </Pressable>
+                )
+              })}
+            </View>
+          </>
         )}
 
         {/* Assign to */}
@@ -323,5 +365,30 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: colors.white,
+  },
+  recurrenceLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  premiumBadge: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.warm[500],
+  },
+  recurrenceButton: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: colors.warm[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recurrenceText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.stone[500],
   },
 })
