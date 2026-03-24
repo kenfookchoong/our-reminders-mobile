@@ -5,27 +5,36 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useProfile } from '../context/ProfileContext'
 import { useReminders } from '../hooks/useReminders'
 import { usePushNotifications } from '../hooks/usePushNotifications'
+import { useSubscription } from '../hooks/useSubscription'
 import Layout from '../components/Layout'
 import TabBar, { type TabId } from '../components/TabBar'
 import ReminderList from '../components/ReminderList'
 import CreateReminderSheet from '../components/CreateReminderSheet'
 import NotificationBanner from '../components/NotificationBanner'
+import PaywallModal from '../components/PaywallModal'
 import SearchBar from '../components/SearchBar'
 import { colors } from '../theme/colors'
 import type { Reminder } from '../types'
+
+const FREE_LIMIT = 5
 
 export default function HomeScreen() {
   const { profile, partner, coupleCode, clearProfile } = useProfile()
   const { reminders, loading, addReminder, updateReminder, toggleDone, deleteReminder, refreshReminders } =
     useReminders(profile?.id ?? null, partner?.id ?? null)
   const { permission, isRegistered, registerForPush } = usePushNotifications(profile?.id ?? null)
+  const { isPremium, offerings, purchasePackage, restorePurchases } = useSubscription()
   const router = useRouter()
   const insets = useSafeAreaInsets()
 
   const [activeTab, setActiveTab] = useState<TabId>('mine')
   const [searchQuery, setSearchQuery] = useState('')
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [paywallOpen, setPaywallOpen] = useState(false)
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
+
+  const activeCount = reminders.filter((r) => !r.is_done).length
+  const canAdd = activeCount < FREE_LIMIT || isPremium
 
   const handleLeave = useCallback(() => {
     clearProfile()
@@ -87,7 +96,7 @@ export default function HomeScreen() {
 
       {/* FAB */}
       <Pressable
-        onPress={() => setSheetOpen(true)}
+        onPress={() => canAdd ? setSheetOpen(true) : setPaywallOpen(true)}
         style={({ pressed }) => [
           styles.fab,
           { bottom: 24 + insets.bottom },
@@ -95,7 +104,22 @@ export default function HomeScreen() {
         ]}
       >
         <Text style={styles.fabText}>+</Text>
+        {!isPremium && (
+          <View style={styles.fabBadge}>
+            <Text style={styles.fabBadgeText}>{activeCount}/{FREE_LIMIT}</Text>
+          </View>
+        )}
       </Pressable>
+
+      {/* Paywall */}
+      <PaywallModal
+        visible={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        offerings={offerings}
+        onPurchase={purchasePackage}
+        onRestore={restorePurchases}
+        activeCount={activeCount}
+      />
 
       <CreateReminderSheet
         open={sheetOpen}
@@ -142,5 +166,21 @@ const styles = StyleSheet.create({
     fontWeight: '300',
     color: colors.white,
     marginTop: -2,
+  },
+  fabBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: colors.stone[700],
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    minWidth: 28,
+    alignItems: 'center',
+  },
+  fabBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.white,
   },
 })

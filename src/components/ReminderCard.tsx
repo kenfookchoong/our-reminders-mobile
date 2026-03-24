@@ -88,11 +88,12 @@ export default function ReminderCard({
       ref={swipeableRef}
       renderLeftActions={renderLeftActions}
       renderRightActions={renderRightActions}
-      onSwipeableOpen={(direction) => {
+      onSwipeableWillOpen={(direction) => {
         if (direction === 'left') {
-          // Swipe right → directly toggle done/undo
+          // Swipe right → instantly toggle done/undo (fires before animation completes)
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
           handleToggle()
+          swipeableRef.current?.close()
         } else {
           // Swipe left → just reveal Delete button (requires tap)
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
@@ -100,7 +101,7 @@ export default function ReminderCard({
       }}
       overshootLeft={false}
       overshootRight={false}
-      friction={2}
+      friction={1.5}
     >
       <Pressable
         onPress={() => setShowActions(!showActions)}
