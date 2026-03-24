@@ -10,6 +10,7 @@ import TabBar, { type TabId } from '../components/TabBar'
 import ReminderList from '../components/ReminderList'
 import CreateReminderSheet from '../components/CreateReminderSheet'
 import NotificationBanner from '../components/NotificationBanner'
+import SearchBar from '../components/SearchBar'
 import { colors } from '../theme/colors'
 import type { Reminder } from '../types'
 
@@ -22,6 +23,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets()
 
   const [activeTab, setActiveTab] = useState<TabId>('mine')
+  const [searchQuery, setSearchQuery] = useState('')
   const [sheetOpen, setSheetOpen] = useState(false)
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
 
@@ -43,9 +45,14 @@ export default function HomeScreen() {
   if (!profile || !partner) return null
 
   const filtered = reminders.filter((r) => {
-    if (activeTab === 'mine') return r.assigned_to === profile.id
-    if (activeTab === 'theirs') return r.assigned_to === partner.id
-    return true
+    const matchesTab =
+      activeTab === 'mine' ? r.assigned_to === profile.id :
+      activeTab === 'theirs' ? r.assigned_to === partner.id : true
+    const q = searchQuery.toLowerCase()
+    const matchesSearch = !q ||
+      r.title.toLowerCase().includes(q) ||
+      r.note?.toLowerCase().includes(q)
+    return matchesTab && matchesSearch
   })
 
   return (
@@ -55,6 +62,8 @@ export default function HomeScreen() {
         isRegistered={isRegistered}
         onEnable={registerForPush}
       />
+
+      <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
       <TabBar active={activeTab} onChange={setActiveTab} />
 
