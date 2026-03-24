@@ -93,7 +93,7 @@ export function useReminders(profileId: string | null, partnerId: string | null)
         ...data,
         updated_at: now,
       }
-      if (data.due_at !== (originalDueAt ?? undefined)) {
+      if ((data.due_at || null) !== (originalDueAt || null)) {
         updates.notified_at = null
       }
       setReminders((prev) =>
