@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import Purchases, { type CustomerInfo, type PurchasesPackage } from 'react-native-purchases'
 import { supabase } from '../lib/supabase'
 
-const REVENUECAT_API_KEY = 'test_xPJDIoTTPQyTpWzTrSzymsSKiyD'
+const REVENUECAT_API_KEY = __DEV__
+  ? 'test_xPJDIoTTPQyTpWzTrSzymsSKiyD'
+  : 'goog_FWZQpFWKouzUgOfornRwbpBZglM'
 const ENTITLEMENT_ID = 'Our Reminders Pro'
 const DEBUG_PREMIUM = __DEV__
 
