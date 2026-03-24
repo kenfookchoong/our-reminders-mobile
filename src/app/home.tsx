@@ -23,7 +23,7 @@ export default function HomeScreen() {
   const { reminders, loading, addReminder, updateReminder, toggleDone, deleteReminder, refreshReminders } =
     useReminders(profile?.id ?? null, partner?.id ?? null)
   const { permission, isRegistered, registerForPush } = usePushNotifications(profile?.id ?? null)
-  const { isPremium, offerings, purchasePackage, restorePurchases, toggleDebugPremium } = useSubscription()
+  const { isPremium, offerings, purchasePackage, restorePurchases, toggleDebugPremium, redeemPromoCode } = useSubscription(profile?.couple_id ?? null)
   const router = useRouter()
   const insets = useSafeAreaInsets()
 
@@ -65,7 +65,7 @@ export default function HomeScreen() {
   })
 
   return (
-    <Layout profileName={profile.name} partnerName={partner.name} coupleCode={coupleCode} onLeave={handleLeave} isPremium={isPremium} onToggleDebugPremium={toggleDebugPremium}>
+    <Layout profileName={profile.name} partnerName={partner.name} coupleCode={coupleCode} onLeave={handleLeave} isPremium={isPremium} onToggleDebugPremium={toggleDebugPremium} onRedeemPromo={redeemPromoCode}>
       <NotificationBanner
         permission={permission}
         isRegistered={isRegistered}

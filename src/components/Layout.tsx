@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Modal, Alert } from 'react-native'
+import { View, Text, TextInput, Pressable, StyleSheet, Modal, Alert } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -13,12 +13,30 @@ interface LayoutProps {
   onLeave: () => void
   isPremium?: boolean
   onToggleDebugPremium?: () => void
+  onRedeemPromo?: (code: string) => Promise<{ success: boolean; error?: string }>
   children: ReactNode
 }
 
-export default function Layout({ profileName, partnerName, coupleCode, onLeave, isPremium, onToggleDebugPremium, children }: LayoutProps) {
+export default function Layout({ profileName, partnerName, coupleCode, onLeave, isPremium, onToggleDebugPremium, onRedeemPromo, children }: LayoutProps) {
   const insets = useSafeAreaInsets()
   const [showMenu, setShowMenu] = useState(false)
+  const [showPromo, setShowPromo] = useState(false)
+  const [promoCode, setPromoCode] = useState('')
+  const [promoLoading, setPromoLoading] = useState(false)
+
+  const handleRedeemPromo = async () => {
+    if (!promoCode.trim() || !onRedeemPromo) return
+    setPromoLoading(true)
+    const result = await onRedeemPromo(promoCode.trim())
+    setPromoLoading(false)
+    if (result.success) {
+      Alert.alert('Success!', 'Premium unlocked! Enjoy unlimited features.')
+      setShowPromo(false)
+      setPromoCode('')
+    } else {
+      Alert.alert('Error', result.error || 'Invalid code')
+    }
+  }
 
   const copyCode = async () => {
     if (coupleCode) {
@@ -68,6 +86,18 @@ export default function Layout({ profileName, partnerName, coupleCode, onLeave, 
                 </View>
               </Pressable>
             )}
+            {!isPremium && onRedeemPromo && (
+              <>
+                <View style={styles.divider} />
+                <Pressable
+                  onPress={() => { setShowMenu(false); setShowPromo(true) }}
+                  style={styles.menuItem}
+                >
+                  <Text style={styles.menuIcon}>🎟️</Text>
+                  <Text style={styles.menuLabel}>Enter promo code</Text>
+                </Pressable>
+              </>
+            )}
             {__DEV__ && onToggleDebugPremium && (
               <>
                 <View style={styles.divider} />
@@ -81,6 +111,34 @@ export default function Layout({ profileName, partnerName, coupleCode, onLeave, 
             <Pressable onPress={handleLeave} style={styles.menuItem}>
               <Text style={styles.menuIcon}>👋</Text>
               <Text style={styles.menuDanger}>Leave couple</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+      {/* Promo code modal */}
+      <Modal visible={showPromo} transparent animationType="fade">
+        <Pressable style={styles.overlay} onPress={() => { setShowPromo(false); setPromoCode('') }}>
+          <View style={[styles.promoModal, { marginTop: insets.top + 100 }]}>
+            <Pressable onPress={() => {}}>
+              <Text style={styles.promoTitle}>Enter Promo Code</Text>
+              <TextInput
+                value={promoCode}
+                onChangeText={setPromoCode}
+                placeholder="e.g. EARLYBIRD"
+                placeholderTextColor={colors.stone[300]}
+                autoCapitalize="characters"
+                autoFocus
+                style={styles.promoInput}
+              />
+              <Pressable
+                onPress={handleRedeemPromo}
+                disabled={!promoCode.trim() || promoLoading}
+                style={[styles.promoButton, (!promoCode.trim() || promoLoading) && { opacity: 0.4 }]}
+              >
+                <Text style={styles.promoButtonText}>
+                  {promoLoading ? 'Checking...' : 'Redeem'}
+                </Text>
+              </Pressable>
             </Pressable>
           </View>
         </Pressable>
@@ -168,5 +226,48 @@ const styles = StyleSheet.create({
   menuDanger: {
     fontSize: 14,
     color: '#EF4444',
+  },
+  promoModal: {
+    backgroundColor: 'white',
+    marginHorizontal: 32,
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  promoTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.stone[800],
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  promoInput: {
+    backgroundColor: colors.warm[50],
+    borderWidth: 1,
+    borderColor: colors.warm[200],
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: colors.stone[800],
+    textAlign: 'center',
+    letterSpacing: 2,
+    fontWeight: '700',
+    marginBottom: 16,
+  },
+  promoButton: {
+    backgroundColor: colors.warm[500],
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  promoButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'white',
   },
 })

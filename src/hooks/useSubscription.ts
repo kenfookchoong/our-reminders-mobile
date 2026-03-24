@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Platform } from 'react-native'
 import Purchases, { type CustomerInfo, type PurchasesPackage } from 'react-native-purchases'
+import { supabase } from '../lib/supabase'
 
 const REVENUECAT_API_KEY = 'test_xPJDIoTTPQyTpWzTrSzymsSKiyD'
 const ENTITLEMENT_ID = 'Our Reminders Pro'
-const DEBUG_PREMIUM = __DEV__ // Auto-true in dev, false in production
+const DEBUG_PREMIUM = __DEV__
 
 let initialized = false
 
-export function useSubscription() {
+export function useSubscription(coupleId: string | null = null) {
   const [isPremium, setIsPremium] = useState(DEBUG_PREMIUM)
   const [debugOverride, setDebugOverride] = useState(DEBUG_PREMIUM)
   const [offerings, setOfferings] = useState<PurchasesPackage[]>([])
@@ -18,9 +18,7 @@ export function useSubscription() {
     const init = async () => {
       try {
         if (!initialized) {
-          Purchases.configure({
-            apiKey: REVENUECAT_API_KEY,
-          })
+          Purchases.configure({ apiKey: REVENUECAT_API_KEY })
           initialized = true
         }
 
@@ -40,28 +38,35 @@ export function useSubscription() {
 
     init()
 
-    // Listen for subscription changes
     const listener = (info: CustomerInfo) => checkPremium(info)
     Purchases.addCustomerInfoUpdateListener(listener)
-
-    return () => {
-      Purchases.removeCustomerInfoUpdateListener(listener)
-    }
+    return () => { Purchases.removeCustomerInfoUpdateListener(listener) }
   }, [])
 
+  // Also check couple's is_premium flag from DB
+  useEffect(() => {
+    if (!coupleId || debugOverride) return
+    supabase
+      .from('couples')
+      .select('is_premium')
+      .eq('id', coupleId)
+      .single()
+      .then(({ data }) => {
+        if (data?.is_premium) setIsPremium(true)
+      })
+  }, [coupleId, debugOverride])
+
   const checkPremium = (info: CustomerInfo) => {
-    if (debugOverride) return // Skip RevenueCat check in debug mode
+    if (debugOverride) return
     const entitlement = info.entitlements.active[ENTITLEMENT_ID]
     setIsPremium(!!entitlement)
   }
 
-  // Debug toggle — only works in dev builds
   const toggleDebugPremium = useCallback(() => {
     if (!__DEV__) return
     setDebugOverride((prev) => !prev)
     setIsPremium((prev) => !prev)
-    console.log('[Subscription] Debug premium toggled to:', !isPremium)
-  }, [isPremium])
+  }, [])
 
   const purchasePackage = useCallback(async (pkg: PurchasesPackage) => {
     try {
@@ -86,5 +91,28 @@ export function useSubscription() {
     }
   }, [])
 
-  return { isPremium, offerings, purchasePackage, restorePurchases, toggleDebugPremium, loading }
+  const redeemPromoCode = useCallback(async (code: string): Promise<{ success: boolean; error?: string }> => {
+    if (!coupleId) return { success: false, error: 'Not in a couple' }
+
+    // Check if code exists and has uses left
+    const { data: promo } = await supabase
+      .from('promo_codes')
+      .select('id, max_uses, used_count')
+      .eq('code', code.trim().toUpperCase())
+      .single()
+
+    if (!promo) return { success: false, error: 'Invalid promo code' }
+    if (promo.used_count >= promo.max_uses) return { success: false, error: 'This code has been fully redeemed' }
+
+    // Set couple as premium
+    await supabase.from('couples').update({ is_premium: true }).eq('id', coupleId)
+
+    // Increment used_count
+    await supabase.from('promo_codes').update({ used_count: promo.used_count + 1 }).eq('id', promo.id)
+
+    setIsPremium(true)
+    return { success: true }
+  }, [coupleId])
+
+  return { isPremium, offerings, purchasePackage, restorePurchases, toggleDebugPremium, redeemPromoCode, loading }
 }
