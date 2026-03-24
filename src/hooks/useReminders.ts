@@ -85,7 +85,7 @@ export function useReminders(profileId: string | null, partnerId: string | null)
   const updateReminder = useCallback(
     async (
       id: string,
-      data: { title: string; note?: string; due_at?: string; assigned_to: string },
+      data: { title: string; note?: string; due_at?: string | null; assigned_to: string; recurrence?: string | null },
       originalDueAt?: string | null
     ) => {
       const now = new Date().toISOString()
@@ -100,9 +100,31 @@ export function useReminders(profileId: string | null, partnerId: string | null)
         prev.map((r) => (r.id === id ? { ...r, ...updates } as Reminder : r))
       )
       const { error } = await supabase.from('reminders').update(updates).eq('id', id)
+
+      // If recurrence was cleared, also clear future auto-generated occurrences
+      if (!data.recurrence) {
+        const { data: futureOccurrences } = await supabase
+          .from('reminders')
+          .select('id')
+          .eq('title', data.title)
+          .eq('created_by', profileId!)
+          .eq('is_done', false)
+          .is('notified_at', null)
+          .neq('id', id)
+          .not('recurrence', 'is', null)
+
+        if (futureOccurrences && futureOccurrences.length > 0) {
+          const ids = futureOccurrences.map((r) => r.id)
+          await supabase.from('reminders').update({ recurrence: null }).in('id', ids)
+          setReminders((prev) =>
+            prev.map((r) => ids.includes(r.id) ? { ...r, recurrence: null } : r)
+          )
+        }
+      }
+
       return !error
     },
-    []
+    [profileId]
   )
 
   const deleteReminder = useCallback(async (id: string) => {
