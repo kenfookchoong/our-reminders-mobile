@@ -33,8 +33,8 @@ export default function HomeScreen() {
   const [paywallOpen, setPaywallOpen] = useState(false)
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
 
-  const activeCount = reminders.filter((r) => !r.is_done).length
-  const canAdd = activeCount < FREE_LIMIT || isPremium
+  const timedCount = reminders.filter((r) => !r.is_done && r.due_at).length
+  const canAdd = timedCount < FREE_LIMIT || isPremium
 
   const handleLeave = useCallback(() => {
     clearProfile()
@@ -106,7 +106,7 @@ export default function HomeScreen() {
         <Text style={styles.fabText}>+</Text>
         {!isPremium && (
           <View style={styles.fabBadge}>
-            <Text style={styles.fabBadgeText}>{activeCount}/{FREE_LIMIT}</Text>
+            <Text style={styles.fabBadgeText}>{timedCount}/{FREE_LIMIT}</Text>
           </View>
         )}
       </Pressable>
@@ -118,7 +118,7 @@ export default function HomeScreen() {
         offerings={offerings}
         onPurchase={purchasePackage}
         onRestore={restorePurchases}
-        activeCount={activeCount}
+        timedCount={timedCount}
       />
 
       <CreateReminderSheet

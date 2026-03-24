@@ -10,7 +10,7 @@ interface PaywallModalProps {
   offerings: PurchasesPackage[]
   onPurchase: (pkg: PurchasesPackage) => Promise<boolean>
   onRestore: () => Promise<boolean>
-  activeCount: number
+  timedCount: number
 }
 
 const FEATURES = [
@@ -26,7 +26,7 @@ export default function PaywallModal({
   offerings,
   onPurchase,
   onRestore,
-  activeCount,
+  timedCount,
 }: PaywallModalProps) {
   const [purchasing, setPurchasing] = useState(false)
   const [restoring, setRestoring] = useState(false)
@@ -58,7 +58,7 @@ export default function PaywallModal({
           <Text style={styles.emoji}>💝</Text>
           <Text style={styles.title}>Upgrade to Premium</Text>
           <Text style={styles.subtitle}>
-            You've used {activeCount}/5 free reminders.{'\n'}
+            You've used {timedCount}/5 free timed reminders.{'\n'}
             Go premium for unlimited access!
           </Text>
 
