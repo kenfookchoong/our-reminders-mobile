@@ -93,7 +93,9 @@ export function useReminders(profileId: string | null, partnerId: string | null)
         ...data,
         updated_at: now,
       }
-      if ((data.due_at || null) !== (originalDueAt || null)) {
+      const newTime = data.due_at ? new Date(data.due_at).getTime() : 0
+      const oldTime = originalDueAt ? new Date(originalDueAt).getTime() : 0
+      if (newTime !== oldTime) {
         updates.notified_at = null
       }
       setReminders((prev) =>
