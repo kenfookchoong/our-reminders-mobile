@@ -93,7 +93,11 @@ export default function PaywallModal({
                       styles.productTitle,
                       pkg.packageType === 'ANNUAL' && styles.productTitleHighlight,
                     ]}>
-                      {pkg.product.title || pkg.identifier}
+                      {pkg.packageType === 'MONTHLY'
+                        ? 'Pro Plan — Monthly'
+                        : pkg.packageType === 'ANNUAL'
+                          ? 'Pro Plan — Yearly'
+                          : pkg.product.title || pkg.identifier}
                     </Text>
                     <Text style={[
                       styles.productPrice,

@@ -18,7 +18,7 @@ module.exports = {
     },
     android: {
       package: "com.ourreminders.app",
-      versionCode: 3,
+      versionCode: 4,
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
         backgroundColor: "#FFF7ED",
