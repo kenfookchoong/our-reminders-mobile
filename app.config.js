@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: "Our Reminders",
     slug: "our-reminders",
-    version: "1.0.0",
+    version: "1.0.1",
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
@@ -18,7 +18,7 @@ module.exports = {
     },
     android: {
       package: "com.ourreminders.app",
-      versionCode: 2,
+      versionCode: 3,
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
         backgroundColor: "#FFF7ED",
