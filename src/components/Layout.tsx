@@ -11,10 +11,12 @@ interface LayoutProps {
   partnerName: string
   coupleCode: string | null
   onLeave: () => void
+  isPremium?: boolean
+  onToggleDebugPremium?: () => void
   children: ReactNode
 }
 
-export default function Layout({ profileName, partnerName, coupleCode, onLeave, children }: LayoutProps) {
+export default function Layout({ profileName, partnerName, coupleCode, onLeave, isPremium, onToggleDebugPremium, children }: LayoutProps) {
   const insets = useSafeAreaInsets()
   const [showMenu, setShowMenu] = useState(false)
 
@@ -65,6 +67,15 @@ export default function Layout({ profileName, partnerName, coupleCode, onLeave, 
                   <Text style={styles.menuCode}>{coupleCode}</Text>
                 </View>
               </Pressable>
+            )}
+            {__DEV__ && onToggleDebugPremium && (
+              <>
+                <View style={styles.divider} />
+                <Pressable onPress={() => { onToggleDebugPremium(); setShowMenu(false) }} style={styles.menuItem}>
+                  <Text style={styles.menuIcon}>{isPremium ? '👑' : '🔒'}</Text>
+                  <Text style={styles.menuLabel}>Premium: {isPremium ? 'ON' : 'OFF'}</Text>
+                </Pressable>
+              </>
             )}
             <View style={styles.divider} />
             <Pressable onPress={handleLeave} style={styles.menuItem}>

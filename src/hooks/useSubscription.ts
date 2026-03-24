@@ -4,11 +4,13 @@ import Purchases, { type CustomerInfo, type PurchasesPackage } from 'react-nativ
 
 const REVENUECAT_API_KEY = 'test_xPJDIoTTPQyTpWzTrSzymsSKiyD'
 const ENTITLEMENT_ID = 'Our Reminders Pro'
+const DEBUG_PREMIUM = __DEV__ // Auto-true in dev, false in production
 
 let initialized = false
 
 export function useSubscription() {
-  const [isPremium, setIsPremium] = useState(false)
+  const [isPremium, setIsPremium] = useState(DEBUG_PREMIUM)
+  const [debugOverride, setDebugOverride] = useState(DEBUG_PREMIUM)
   const [offerings, setOfferings] = useState<PurchasesPackage[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -48,9 +50,18 @@ export function useSubscription() {
   }, [])
 
   const checkPremium = (info: CustomerInfo) => {
+    if (debugOverride) return // Skip RevenueCat check in debug mode
     const entitlement = info.entitlements.active[ENTITLEMENT_ID]
     setIsPremium(!!entitlement)
   }
+
+  // Debug toggle — only works in dev builds
+  const toggleDebugPremium = useCallback(() => {
+    if (!__DEV__) return
+    setDebugOverride((prev) => !prev)
+    setIsPremium((prev) => !prev)
+    console.log('[Subscription] Debug premium toggled to:', !isPremium)
+  }, [isPremium])
 
   const purchasePackage = useCallback(async (pkg: PurchasesPackage) => {
     try {
@@ -75,5 +86,5 @@ export function useSubscription() {
     }
   }, [])
 
-  return { isPremium, offerings, purchasePackage, restorePurchases, loading }
+  return { isPremium, offerings, purchasePackage, restorePurchases, toggleDebugPremium, loading }
 }
