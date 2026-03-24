@@ -134,9 +134,13 @@ export default function ReminderCard({
               <View style={[styles.dueBadge, overdue && styles.dueBadgeOverdue]}>
                 <Text style={[styles.dueText, overdue && styles.dueTextOverdue]}>
                   {formatDueDate(reminder.due_at)}
-                  {reminder.recurrence ? ` 🔁 ${reminder.recurrence}` : ''}
                 </Text>
               </View>
+              {reminder.recurrence && (
+                <View style={styles.recurrenceBadge}>
+                  <Text style={styles.recurrenceText}>🔁 Repeats {reminder.recurrence}</Text>
+                </View>
+              )}
             ) : null}
             {isPartnerReminder && !reminder.is_done ? (
               <NudgeButton
@@ -240,6 +244,18 @@ const styles = StyleSheet.create({
   },
   dueTextOverdue: {
     color: colors.red[500],
+  },
+  recurrenceBadge: {
+    backgroundColor: colors.warm[50],
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: 'flex-start',
+  },
+  recurrenceText: {
+    fontSize: 10,
+    color: colors.warm[500],
+    fontWeight: '500',
   },
   actions: {
     flexDirection: 'row',
