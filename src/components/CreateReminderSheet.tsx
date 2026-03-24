@@ -72,7 +72,7 @@ export default function CreateReminderSheet({
     const data = {
       title: title.trim(),
       note: note.trim() || undefined,
-      due_at: dueDate ? dueDate.toISOString() : undefined,
+      due_at: dueDate ? dueDate.toISOString() : null,
       assigned_to: assignTo === 'me' ? myId : partnerId,
     }
 
